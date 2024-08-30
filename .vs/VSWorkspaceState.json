@@ -10,6 +10,6 @@
     "\\src\\can",
     "\\src\\protocol"
   ],
-  "SelectedNode": "\\bindings\\myactuator_rmd.cpp",
+  "SelectedNode": "\\include\\myactuator_rmd\\actuator_interface.hpp",
   "PreviewInSolutionExplorer": false
 }
