@@ -9,14 +9,13 @@
 #include <cstdint>
 #include <string>
 #include <sstream>
-#include <tuple>
 
 #include <pybind11/chrono.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 
 #include "myactuator_rmd/actuator_state/acceleration_type.hpp"
-#include "myactuator_rmd/actuator_state/can_baud_rate.hpp"
+#include "myactuator_rmd/actuator_state/baud_rate.hpp"
 #include "myactuator_rmd/actuator_state/control_mode.hpp"
 #include "myactuator_rmd/actuator_state/error_code.hpp"
 #include "myactuator_rmd/actuator_state/feedback.hpp"
@@ -27,94 +26,50 @@
 #include "myactuator_rmd/can/exceptions.hpp"
 #include "myactuator_rmd/can/frame.hpp"
 #include "myactuator_rmd/can/node.hpp"
-#include "myactuator_rmd/driver/can_driver.hpp"
-#include "myactuator_rmd/driver/driver.hpp"
-#include "myactuator_rmd/actuator_constants.hpp"
-#include "myactuator_rmd/actuator_interface.hpp"
+#include "myactuator_rmd/driver.hpp"
 #include "myactuator_rmd/exceptions.hpp"
 #include "myactuator_rmd/io.hpp"
 
 
-namespace myactuator_rmd {
-  namespace bindings {
-
-    /**\fn declareActuator
-     * \brief
-     *    Helper function for declaring the actuator constants for a given actuator
-     * 
-     * \tparam T
-     *    The class containing the actuator constants
-     * \param[in] m
-     *    Pybind11 module that the actuator constants should be declared into
-     * \param[in] class_name
-     *    Class name of the corresponding Python bindings
-    */
-    template<typename T>
-    void declareActuator(pybind11::module& m, std::string const& class_name) {
-      pybind11::class_<T>(m, class_name.c_str())
-        .def_readonly_static("reducer_ratio", &T::reducer_ratio)
-        .def_readonly_static("rated_speed", &T::rated_speed)
-        .def_readonly_static("rated_current", &T::rated_current)
-        .def_readonly_static("rated_power", &T::rated_power)
-        .def_readonly_static("rated_torque", &T::rated_torque)
-        .def_readonly_static("torque_constant", &T::torque_constant)
-        .def_readonly_static("rotor_inertia", &T::rotor_inertia);
-      return;
-    }
-
-  }
-}
-
 PYBIND11_MODULE(myactuator_rmd_py, m) {
 
-  m.doc() = "Python bindings for MyActuator RMD-X actuator series";
-  pybind11::class_<myactuator_rmd::Driver>(m, "Driver");
-  pybind11::class_<myactuator_rmd::CanDriver, myactuator_rmd::Driver>(m, "CanDriver")
-    .def(pybind11::init<std::string const&>());
-  pybind11::class_<myactuator_rmd::ActuatorInterface>(m, "ActuatorInterface")
-    .def(pybind11::init<myactuator_rmd::Driver&, std::uint32_t>())
-    .def("getAcceleration", &myactuator_rmd::ActuatorInterface::getAcceleration)
-    .def("getCanId", &myactuator_rmd::ActuatorInterface::getCanId)
-    .def("getControllerGains", &myactuator_rmd::ActuatorInterface::getControllerGains)
-    .def("getControlMode", &myactuator_rmd::ActuatorInterface::getControlMode)
-    .def("getMotorModel", &myactuator_rmd::ActuatorInterface::getMotorModel)
-    .def("getMotorPower", &myactuator_rmd::ActuatorInterface::getMotorPower)
-    .def("getMotorStatus1", &myactuator_rmd::ActuatorInterface::getMotorStatus1)
-    .def("getMotorStatus2", [](myactuator_rmd::ActuatorInterface& self) {
-        auto status = self.getMotorStatus2();
-        return pybind11::make_tuple(
-            status.temperature,
-            status.current,
-            status.shaft_angle,
-            status.shaft_speed
-        );
-    })
-    .def("getMotorStatus3", &myactuator_rmd::ActuatorInterface::getMotorStatus3)
-    .def("getMultiTurnAngle", &myactuator_rmd::ActuatorInterface::getMultiTurnAngle)
-    .def("getMultiTurnEncoderPosition", &myactuator_rmd::ActuatorInterface::getMultiTurnEncoderPosition)
-    .def("getMultiTurnEncoderOriginalPosition", &myactuator_rmd::ActuatorInterface::getMultiTurnEncoderOriginalPosition)
-    .def("getMultiTurnEncoderZeroOffset", &myactuator_rmd::ActuatorInterface::getMultiTurnEncoderZeroOffset)
-    .def("getRuntime", &myactuator_rmd::ActuatorInterface::getRuntime)
-    .def("getSingleTurnAngle", &myactuator_rmd::ActuatorInterface::getSingleTurnAngle)
-    .def("getSingleTurnEncoderPosition", &myactuator_rmd::ActuatorInterface::getSingleTurnEncoderPosition)
-    .def("getVersionDate", &myactuator_rmd::ActuatorInterface::getVersionDate)
-    .def("lockBrake", &myactuator_rmd::ActuatorInterface::lockBrake)
-    .def("releaseBrake", &myactuator_rmd::ActuatorInterface::releaseBrake)
-    .def("reset", &myactuator_rmd::ActuatorInterface::reset)
-    .def("sendCurrentSetpoint", &myactuator_rmd::ActuatorInterface::sendCurrentSetpoint)
-    .def("sendPositionAbsoluteSetpoint", &myactuator_rmd::ActuatorInterface::sendPositionAbsoluteSetpoint)
-    .def("sendTorqueSetpoint", &myactuator_rmd::ActuatorInterface::sendTorqueSetpoint)
-    .def("sendVelocitySetpoint", &myactuator_rmd::ActuatorInterface::sendVelocitySetpoint)
-    .def("setAcceleration", &myactuator_rmd::ActuatorInterface::setAcceleration)
-    .def("setCanBaudRate", &myactuator_rmd::ActuatorInterface::setCanBaudRate)
-    .def("setCanId", &myactuator_rmd::ActuatorInterface::setCanId)
-    .def("setControllerGains", &myactuator_rmd::ActuatorInterface::setControllerGains)
-    .def("setCurrentPositionAsEncoderZero", &myactuator_rmd::ActuatorInterface::setCurrentPositionAsEncoderZero)
-    .def("setEncoderZero", &myactuator_rmd::ActuatorInterface::setEncoderZero)
-    .def("setTimeout", &myactuator_rmd::ActuatorInterface::setTimeout)
-    .def("shutdownMotor", &myactuator_rmd::ActuatorInterface::shutdownMotor)
-    .def("stopMotor", &myactuator_rmd::ActuatorInterface::stopMotor);
-  pybind11::register_exception<myactuator_rmd::Exception>(m, "ActuatorException");
+  m.doc() = "MyActuator RMD driver main module";
+  pybind11::class_<myactuator_rmd::Driver>(m, "Driver")
+    .def(pybind11::init<std::string const&, std::uint32_t>())
+    .def("getAcceleration", &myactuator_rmd::Driver::getAcceleration)
+    .def("getCanId", &myactuator_rmd::Driver::getCanId)
+    .def("getControllerGains", &myactuator_rmd::Driver::getControllerGains)
+    .def("getControlMode", &myactuator_rmd::Driver::getControlMode)
+    .def("getMotorModel", &myactuator_rmd::Driver::getMotorModel)
+    .def("getMotorPower", &myactuator_rmd::Driver::getMotorPower)
+    .def("getMotorStatus1", &myactuator_rmd::Driver::getMotorStatus1)
+    .def("getMotorStatus2", &myactuator_rmd::Driver::getMotorStatus2)
+    .def("getMotorStatus3", &myactuator_rmd::Driver::getMotorStatus3)
+    .def("getMultiTurnAngle", &myactuator_rmd::Driver::getMultiTurnAngle)
+    .def("getMultiTurnEncoderPosition", &myactuator_rmd::Driver::getMultiTurnEncoderPosition)
+    .def("getMultiTurnEncoderOriginalPosition", &myactuator_rmd::Driver::getMultiTurnEncoderOriginalPosition)
+    .def("getMultiTurnEncoderZeroOffset", &myactuator_rmd::Driver::getMultiTurnEncoderZeroOffset)
+    .def("getRuntime", &myactuator_rmd::Driver::getRuntime)
+    .def("getSingleTurnAngle", &myactuator_rmd::Driver::getSingleTurnAngle)
+    .def("getSingleTurnEncoderPosition", &myactuator_rmd::Driver::getSingleTurnEncoderPosition)
+    .def("getVersionDate", &myactuator_rmd::Driver::getVersionDate)
+    .def("lockBrake", &myactuator_rmd::Driver::lockBrake)
+    .def("releaseBrake", &myactuator_rmd::Driver::releaseBrake)
+    .def("reset", &myactuator_rmd::Driver::reset)
+    .def("sendCurrentSetpoint", &myactuator_rmd::Driver::sendCurrentSetpoint)
+    .def("sendPositionAbsoluteSetpoint", &myactuator_rmd::Driver::sendPositionAbsoluteSetpoint)
+    .def("sendTorqueSetpoint", &myactuator_rmd::Driver::sendTorqueSetpoint)
+    .def("sendVelocitySetpoint", &myactuator_rmd::Driver::sendVelocitySetpoint)
+    .def("setAcceleration", &myactuator_rmd::Driver::setAcceleration)
+    .def("setBaudRate", &myactuator_rmd::Driver::setBaudRate)
+    .def("setCanId", &myactuator_rmd::Driver::setCanId)
+    .def("setControllerGains", &myactuator_rmd::Driver::setControllerGains)
+    .def("setCurrentPositionAsEncoderZero", &myactuator_rmd::Driver::setCurrentPositionAsEncoderZero)
+    .def("setEncoderZero", &myactuator_rmd::Driver::setEncoderZero)
+    .def("setTimeout", &myactuator_rmd::Driver::setTimeout)
+    .def("shutdownMotor", &myactuator_rmd::Driver::shutdownMotor)
+    .def("stopMotor", &myactuator_rmd::Driver::stopMotor);
+  pybind11::register_exception<myactuator_rmd::Exception>(m, "DriverException");
   pybind11::register_exception<myactuator_rmd::ProtocolException>(m, "ProtocolException");
   pybind11::register_exception<myactuator_rmd::ValueRangeException>(m, "ValueRangeException");
 
@@ -124,9 +79,9 @@ PYBIND11_MODULE(myactuator_rmd_py, m) {
     .value("POSITION_PLANNING_DECELERATION", myactuator_rmd::AccelerationType::POSITION_PLANNING_DECELERATION)
     .value("VELOCITY_PLANNING_ACCELERATION", myactuator_rmd::AccelerationType::VELOCITY_PLANNING_ACCELERATION)
     .value("VELOCITY_PLANNING_DECELERATION", myactuator_rmd::AccelerationType::VELOCITY_PLANNING_DECELERATION);
-  pybind11::enum_<myactuator_rmd::CanBaudRate>(m_actuator_state, "CanBaudRate")
-    .value("KBPS500", myactuator_rmd::CanBaudRate::KBPS500)
-    .value("MBPS1", myactuator_rmd::CanBaudRate::MBPS1);
+  pybind11::enum_<myactuator_rmd::BaudRate>(m_actuator_state, "BaudRate")
+    .value("KBPS500", myactuator_rmd::BaudRate::KBPS500)
+    .value("MBPS1", myactuator_rmd::BaudRate::MBPS1);
   pybind11::enum_<myactuator_rmd::ControlMode>(m_actuator_state, "ControlMode")
     .value("NONE", myactuator_rmd::ControlMode::NONE)
     .value("CURRENT", myactuator_rmd::ControlMode::CURRENT)
@@ -168,19 +123,16 @@ PYBIND11_MODULE(myactuator_rmd_py, m) {
       return ss.str();
     });
   pybind11::class_<myactuator_rmd::MotorStatus2>(m_actuator_state, "MotorStatus2")
-      .def(pybind11::init<int const, float const, float const, float const>())
-      .def_readonly("temperature", &myactuator_rmd::MotorStatus2::temperature)
-      .def_readonly("current", &myactuator_rmd::MotorStatus2::current)
-      .def_readonly("shaft_speed", &myactuator_rmd::MotorStatus2::shaft_speed)
-      .def_readonly("shaft_angle", &myactuator_rmd::MotorStatus2::shaft_angle)
-      .def("as_tuple", [](myactuator_rmd::MotorStatus2 const& motor_status) {
-      return pybind11::make_tuple(
-          motor_status.temperature,
-          motor_status.current,
-          motor_status.shaft_angle,
-          motor_status.shaft_speed
-      );
-          });
+    .def(pybind11::init<int const, float const, float const, float const>())
+    .def_readonly("temperature", &myactuator_rmd::MotorStatus2::temperature)
+    .def_readonly("current", &myactuator_rmd::MotorStatus2::current)
+    .def_readonly("shaft_speed", &myactuator_rmd::MotorStatus2::shaft_speed)
+    .def_readonly("shaft_angle", &myactuator_rmd::MotorStatus2::shaft_angle)
+    .def("__repr__", [](myactuator_rmd::MotorStatus2 const& motor_status) -> std::string { 
+      std::ostringstream ss {};
+      ss << motor_status;
+      return ss.str();
+    });
   pybind11::class_<myactuator_rmd::MotorStatus3>(m_actuator_state, "MotorStatus3")
     .def(pybind11::init<int const, float const, float const, float const>())
     .def_readonly("temperature", &myactuator_rmd::MotorStatus3::temperature)
@@ -211,7 +163,7 @@ PYBIND11_MODULE(myactuator_rmd_py, m) {
     .def(pybind11::init<std::string const&>())
     .def("setRecvFilter", &myactuator_rmd::can::Node::setRecvFilter)
     .def("read", &myactuator_rmd::can::Node::read)
-    .def("write", pybind11::overload_cast<myactuator_rmd::can::Frame const&>(&myactuator_rmd::can::Node::write));
+    .def("write", static_cast<void (myactuator_rmd::can::Node::*)(myactuator_rmd::can::Frame const&)>(&myactuator_rmd::can::Node::write));
   pybind11::register_exception<myactuator_rmd::can::SocketException>(m_can, "SocketException");
   pybind11::register_exception<myactuator_rmd::can::Exception>(m_can, "CanException");
   pybind11::register_exception<myactuator_rmd::can::TxTimeoutError>(m_can, "TxTimeoutError");
@@ -223,32 +175,5 @@ PYBIND11_MODULE(myactuator_rmd_py, m) {
   pybind11::register_exception<myactuator_rmd::can::BusOffError>(m_can, "BusOffError");
   pybind11::register_exception<myactuator_rmd::can::BusError>(m_can, "BusError");
   pybind11::register_exception<myactuator_rmd::can::ControllerRestartedError>(m_can, "ControllerRestartedError");
-
-  auto m_actuator_constants = m.def_submodule("actuator_constants", "Submodule for actuator constants");
-  myactuator_rmd::bindings::declareActuator<myactuator_rmd::X4V2>(m_actuator_constants,     "X4V2");
-  myactuator_rmd::bindings::declareActuator<myactuator_rmd::X4V3>(m_actuator_constants,     "X4V3");
-  myactuator_rmd::bindings::declareActuator<myactuator_rmd::X4_3>(m_actuator_constants,     "X4_3");
-  myactuator_rmd::bindings::declareActuator<myactuator_rmd::X4_24>(m_actuator_constants,    "X4_24");
-  myactuator_rmd::bindings::declareActuator<myactuator_rmd::X6V2>(m_actuator_constants,     "X6V2");
-  myactuator_rmd::bindings::declareActuator<myactuator_rmd::X6S2V2>(m_actuator_constants,   "X6S2V2");
-  myactuator_rmd::bindings::declareActuator<myactuator_rmd::X6V3>(m_actuator_constants,     "X6V3");
-  myactuator_rmd::bindings::declareActuator<myactuator_rmd::X6_7>(m_actuator_constants,     "X6_7");
-  myactuator_rmd::bindings::declareActuator<myactuator_rmd::X6_8>(m_actuator_constants,     "X6_8");
-  myactuator_rmd::bindings::declareActuator<myactuator_rmd::X6_40>(m_actuator_constants,    "X6_40");
-  myactuator_rmd::bindings::declareActuator<myactuator_rmd::X8V2>(m_actuator_constants,     "X8V2");
-  myactuator_rmd::bindings::declareActuator<myactuator_rmd::X8ProV2>(m_actuator_constants,  "X8ProV2");
-  myactuator_rmd::bindings::declareActuator<myactuator_rmd::X8S2V3>(m_actuator_constants,   "X8S2V3");
-  myactuator_rmd::bindings::declareActuator<myactuator_rmd::X8HV3>(m_actuator_constants,    "X8HV3");
-  myactuator_rmd::bindings::declareActuator<myactuator_rmd::X8ProHV3>(m_actuator_constants, "X8ProHV3");
-  myactuator_rmd::bindings::declareActuator<myactuator_rmd::X8_20>(m_actuator_constants,    "X8_20");
-  myactuator_rmd::bindings::declareActuator<myactuator_rmd::X8_25>(m_actuator_constants,    "X8_25");
-  myactuator_rmd::bindings::declareActuator<myactuator_rmd::X8_60>(m_actuator_constants,    "X8_60");
-  myactuator_rmd::bindings::declareActuator<myactuator_rmd::X8_90>(m_actuator_constants,    "X8_90");
-  myactuator_rmd::bindings::declareActuator<myactuator_rmd::X10V3>(m_actuator_constants,    "X10V3");
-  myactuator_rmd::bindings::declareActuator<myactuator_rmd::X10S2V3>(m_actuator_constants,  "X10S2V3");
-  myactuator_rmd::bindings::declareActuator<myactuator_rmd::X10_40>(m_actuator_constants,   "X10_40");
-  myactuator_rmd::bindings::declareActuator<myactuator_rmd::X10_100>(m_actuator_constants,  "X10_100");
-  myactuator_rmd::bindings::declareActuator<myactuator_rmd::X12_150>(m_actuator_constants,  "X12_150");
-  myactuator_rmd::bindings::declareActuator<myactuator_rmd::X15_400>(m_actuator_constants,  "X15_400");
 
 }
