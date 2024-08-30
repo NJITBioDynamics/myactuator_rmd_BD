@@ -80,7 +80,15 @@ PYBIND11_MODULE(myactuator_rmd_py, m) {
     .def("getMotorModel", &myactuator_rmd::ActuatorInterface::getMotorModel)
     .def("getMotorPower", &myactuator_rmd::ActuatorInterface::getMotorPower)
     .def("getMotorStatus1", &myactuator_rmd::ActuatorInterface::getMotorStatus1)
-    .def("getMotorStatus2", &myactuator_rmd::ActuatorInterface::getMotorStatus2)
+    .def("getMotorStatus2", [](myactuator_rmd::ActuatorInterface const& self) {
+        auto status = self.getMotorStatus2();
+        return pybind11::make_tuple(
+            status.temperature,
+            status.current,
+            status.shaft_angle,
+            status.shaft_speed
+        );
+    })
     .def("getMotorStatus3", &myactuator_rmd::ActuatorInterface::getMotorStatus3)
     .def("getMultiTurnAngle", &myactuator_rmd::ActuatorInterface::getMultiTurnAngle)
     .def("getMultiTurnEncoderPosition", &myactuator_rmd::ActuatorInterface::getMultiTurnEncoderPosition)
@@ -160,16 +168,19 @@ PYBIND11_MODULE(myactuator_rmd_py, m) {
       return ss.str();
     });
   pybind11::class_<myactuator_rmd::MotorStatus2>(m_actuator_state, "MotorStatus2")
-    .def(pybind11::init<int const, float const, float const, float const>())
-    .def_readonly("temperature", &myactuator_rmd::MotorStatus2::temperature)
-    .def_readonly("current", &myactuator_rmd::MotorStatus2::current)
-    .def_readonly("shaft_speed", &myactuator_rmd::MotorStatus2::shaft_speed)
-    .def_readonly("shaft_angle", &myactuator_rmd::MotorStatus2::shaft_angle)
-    .def("__repr__", [](myactuator_rmd::MotorStatus2 const& motor_status) -> std::string { 
-      std::ostringstream ss {};
-      ss << motor_status;
-      return ss.str();
-    });
+      .def(pybind11::init<int const, float const, float const, float const>())
+      .def_readonly("temperature", &myactuator_rmd::MotorStatus2::temperature)
+      .def_readonly("current", &myactuator_rmd::MotorStatus2::current)
+      .def_readonly("shaft_speed", &myactuator_rmd::MotorStatus2::shaft_speed)
+      .def_readonly("shaft_angle", &myactuator_rmd::MotorStatus2::shaft_angle)
+      .def("as_tuple", [](myactuator_rmd::MotorStatus2 const& motor_status) {
+      return pybind11::make_tuple(
+          motor_status.temperature,
+          motor_status.current,
+          motor_status.shaft_angle,
+          motor_status.shaft_speed
+      );
+          });
   pybind11::class_<myactuator_rmd::MotorStatus3>(m_actuator_state, "MotorStatus3")
     .def(pybind11::init<int const, float const, float const, float const>())
     .def_readonly("temperature", &myactuator_rmd::MotorStatus3::temperature)

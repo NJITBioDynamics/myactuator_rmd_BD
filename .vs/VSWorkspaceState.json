@@ -1,0 +1,15 @@
+{
+  "ExpandedNodes": [
+    "",
+    "\\bindings",
+    "\\include",
+    "\\include\\myactuator_rmd",
+    "\\include\\myactuator_rmd\\actuator_state",
+    "\\myactuator_rmd",
+    "\\src",
+    "\\src\\can",
+    "\\src\\protocol"
+  ],
+  "SelectedNode": "\\bindings\\myactuator_rmd.cpp",
+  "PreviewInSolutionExplorer": false
+}
