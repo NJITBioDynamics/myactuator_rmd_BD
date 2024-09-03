@@ -34,6 +34,27 @@ After having installed its dependencies you will have to install the driver SDK 
 
 ### 1.1 Building the C++ library
 
+If you are building the C++ library on Nvidia Jetson Nano, please check the following file:
+```bash
+/usr/include/linux/can.h
+```
+From this file you can check the can_frame structure. An example from the lab Jetson Nano is below:
+```bash
+struct can_frame {
+	canid_t can_id;  /* 32 bit CAN_ID + EFF/RTR/ERR flags */
+	__u8    can_dlc; /* frame payload length in byte (0 .. CAN_MAX_DLEN) */
+	__u8    __pad;   /* padding */
+	__u8    __res0;  /* reserved / padding */
+	__u8    __res1;  /* reserved / padding */
+	__u8    data[CAN_MAX_DLEN] __attribute__((aligned(8)));
+};
+```
+In the example, the struct uses 'can_dlc' to indicate the data frame length. Therefore, you need to change all variables naming with 'can_frame.len' to 'can_frame.can_dlc'. In this exmaple, there are 2 variables need to be changed. They are in:
+```bash
+src/can/utilities.cpp
+src/can/node.cpp
+```
+
 For **building the C++ driver SDK** open a new terminal inside this folder and execute the following commands
 
 ```bash
